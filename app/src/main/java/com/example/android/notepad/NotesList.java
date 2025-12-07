@@ -52,6 +52,8 @@ import androidx.appcompat.app.AppCompatDelegate;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import java.util.Objects;
+
 
 /**
  * Displays a list of notes. Will display notes from the {@link Uri}
@@ -102,17 +104,16 @@ public class NotesList extends AppCompatActivity {
     private static final int SEARCH_MODE_ALL = 0;
     private static final int SEARCH_MODE_TITLE = 1;
     private static final int SEARCH_MODE_CONTENT = 2;
-    private static final long SEARCH_DEBOUNCE_MS = 250L;
-    // 搜索防抖
+    private static final long SEARCH_DEBOUNCE_MS = 250L; // 搜索防抖时间（毫秒）
     private final Handler searchHandler = new Handler(Looper.getMainLooper());
     // AppCompat 改造新增字段
     private SimpleCursorAdapter mAdapter;
     private ListView listView;
-    private int searchMode = SEARCH_MODE_ALL;
-    private String currentQuery = "";
-    private SearchView searchView;
-    private Spinner searchModeSpinner;
-    private Runnable searchRunnable;
+    private int searchMode = SEARCH_MODE_ALL; // 搜索模式
+    private String currentQuery = ""; // 当前查询字符串
+    private SearchView searchView; // 搜索框
+    private Spinner searchModeSpinner; // 搜索模式选择框
+    private Runnable searchRunnable; // 搜索任务
 
     /**
      * onCreate is called when Android starts this Activity from scratch.
@@ -167,8 +168,9 @@ public class NotesList extends AppCompatActivity {
          *
          * Please see the introductory note about performing provider operations on the UI thread.
          */
+        Uri notesUri = getIntent().getData() != null ? getIntent().getData() : NotePad.Notes.CONTENT_URI;
         Cursor cursor = getContentResolver().query(
-                getIntent().getData(),            // Use the default content URI for the provider.
+                notesUri,            // Use the default content URI for the provider.
                 PROJECTION,                       // Return the note ID and title for each note.
                 null,                             // No where clause, return all records.
                 null,                             // No where clause, therefore no where column values.
@@ -208,7 +210,8 @@ public class NotesList extends AppCompatActivity {
                 R.layout.noteslist_item,          // Points to the XML for a list item 指向列表项的 XML
                 cursor,                           // The cursor to get items from 要获取项的光标
                 dataColumns,
-                viewIDs
+                viewIDs,
+                0                                 // Flags 标志
         );
 
         adapter.setViewBinder((view, cursor1, columnIndex) -> {
@@ -225,7 +228,7 @@ public class NotesList extends AppCompatActivity {
                     java.text.DateFormat df = android.text.format.DateFormat.getDateFormat(this);
                     java.text.DateFormat tf = android.text.format.DateFormat.getTimeFormat(this);
                     java.util.Date d = new java.util.Date(timestamp);
-                    ((TextView) view).setText(df.format(d) + " " + tf.format(d));
+                    ((TextView) view).setText(String.format("%s %s", df.format(d), tf.format(d))); // 显示日期和时间
                 }
                 return true;
             } else if (columnIndex == COLUMN_INDEX_NOTE) {
@@ -479,7 +482,7 @@ public class NotesList extends AppCompatActivity {
 
             // This is the selected item.
             long selectedId = listView.getSelectedItemId();
-            Uri uri = ContentUris.withAppendedId(getIntent().getData(), selectedId);
+            Uri uri = ContentUris.withAppendedId(Objects.requireNonNull(getIntent().getData()), selectedId);
 
             // Creates an array of Intents with one element. This will be used to send an Intent
             // based on the selected menu item.
@@ -586,7 +589,7 @@ public class NotesList extends AppCompatActivity {
      * @param menu     A ContexMenu object to which items should be added.
      * @param view     The View for which the context menu is being constructed.
      * @param menuInfo Data associated with view.
-     * @throws ClassCastException
+     * @throws ClassCastException 如果menuInfo为空。
      */
     @Override
     public void onCreateContextMenu(ContextMenu menu, View view, ContextMenuInfo menuInfo) {
@@ -647,7 +650,7 @@ public class NotesList extends AppCompatActivity {
      * @param item The selected menu item
      * @return True if the menu item was DELETE, and no default processing is need, otherwise false,
      * which triggers the default handling of the item.
-     * @throws ClassCastException
+     * @throws ClassCastException 如果menuInfo为空。
      */
     @Override
     public boolean onContextItemSelected(MenuItem item) {
@@ -659,7 +662,7 @@ public class NotesList extends AppCompatActivity {
             Log.e(TAG, "bad menuInfo", e);
             return false;
         }
-        Uri noteUri = ContentUris.withAppendedId(getIntent().getData(), info.id);
+        Uri noteUri = ContentUris.withAppendedId(Objects.requireNonNull(getIntent().getData()), info.id);
         int id = item.getItemId();
         if (id == R.id.context_open) {
             startActivity(new Intent(Intent.ACTION_EDIT, noteUri));

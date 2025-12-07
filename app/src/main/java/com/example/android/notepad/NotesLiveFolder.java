@@ -16,8 +16,6 @@
 
 package com.example.android.notepad;
 
-import com.example.android.notepad.NotePad;
-
 import android.app.Activity;
 import android.content.Intent;
 import android.content.Intent.ShortcutIconResource;
@@ -30,7 +28,7 @@ import android.provider.LiveFolders;
  * its icon in the Home view.
  * When the user clicks the icon, Home uses the data it got from the Intent to retrieve information
  * from a content provider and display it in a View.
- *
+ * <p>
  * The intent filter for this Activity is set to ACTION_CREATE_LIVE_FOLDER, which
  * HOME sends in response to a long press and selection of Live Folder.
  */
@@ -71,7 +69,7 @@ public class NotesLiveFolder extends Activity {
 
             // Adds the display icon of the live folder as an Extra resource.
             ShortcutIconResource foldericon =
-                Intent.ShortcutIconResource.fromContext(this, R.drawable.live_folder_notes);
+                    Intent.ShortcutIconResource.fromContext(this, R.drawable.live_folder_notes);
             liveFolderIntent.putExtra(LiveFolders.EXTRA_LIVE_FOLDER_ICON, foldericon);
 
             // Add the display mode of the live folder as an integer. The specified
