@@ -63,4 +63,19 @@
     <string name="menu_theme_light">Theme: Light</string>
     <string name="menu_theme_dark">Theme: Dark</string>
     <string name="menu_export">Export</string>
+
+    <!-- 偏好设置 -->
+    <string name="menu_settings">Settings</string>
+    <string name="pref_title_theme">Theme mode</string>
+    <string name="pref_title_relative_time">Show relative time</string>
+    <string name="pref_title_show_preview">Show content preview</string>
+    <string name="pref_title_default_color">Default note color</string>
+    <string name="pref_theme_system">Follow system</string>
+    <string name="pref_theme_light">Light</string>
+    <string name="pref_theme_dark">Dark</string>
+    <string name="pref_color_default">Default</string>
+    <string name="pref_color_yellow">Yellow</string>
+    <string name="pref_color_green">Green</string>
+    <string name="pref_color_blue">Blue</string>
+    <string name="pref_color_red">Red</string>
 </resources>

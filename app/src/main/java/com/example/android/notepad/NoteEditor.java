@@ -50,6 +50,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 
 /**
  * This Activity handles "editing" a note, where editing is responding to
@@ -84,13 +85,12 @@ public class NoteEditor extends AppCompatActivity {
     // as a "state" constant
     private static final int STATE_EDIT = 0;
     private static final int STATE_INSERT = 1;
-
+    private static final int REQUEST_EXPORT = 1001;
     // Global mutable variables
     private int mState;
     private Uri mUri;
     private Cursor mCursor;
     private EditText mText;
-
     private int mColor;
     private String mOriginalContent;
     private boolean mPendingPaste = false;
@@ -98,7 +98,6 @@ public class NoteEditor extends AppCompatActivity {
     private EditText mTitle;
     private String mOriginalTitle = "";
     private boolean mIsFromPaste = false;
-    private static final int REQUEST_EXPORT = 1001;
 
     /**
      * This method is called by Android when the Activity is first started. From the incoming
@@ -134,7 +133,19 @@ public class NoteEditor extends AppCompatActivity {
             initialValues.put(NotePad.Notes.COLUMN_NAME_NOTE, "");
             initialValues.put(NotePad.Notes.COLUMN_NAME_CREATE_DATE, now);
             initialValues.put(NotePad.Notes.COLUMN_NAME_MODIFICATION_DATE, now);
+            // 默认颜色读取偏好（ListPreference 字符串值，需解析为整型）
+            String colorStr = getSharedPreferences("settings", MODE_PRIVATE)
+                    .getString("pref_default_color", "0");
+            int defColor;
+            try {
+                defColor = Integer.parseInt(colorStr);
+            } catch (NumberFormatException e) {
+                defColor = 0;
+            }
+            initialValues.put(NotePad.Notes.COLUMN_NAME_COLOR, defColor);
             mUri = getContentResolver().insert(NotePad.Notes.CONTENT_URI, initialValues);
+            mColor = defColor;
+            applyEditorColor();
             // 如果是粘贴操作，标记待执行，等到窗口获得焦点后再粘贴
             if (Intent.ACTION_PASTE.equals(action)) {
                 mPendingPaste = true;
@@ -188,6 +199,8 @@ public class NoteEditor extends AppCompatActivity {
             View target = (mState == STATE_INSERT && mTitle != null) ? mTitle : mText;
             imm.showSoftInput(target, InputMethodManager.SHOW_IMPLICIT);
         }
+        // 初始化完编辑器视图后再应用颜色，避免空指针
+        applyEditorColor();
         // 文本变化时刷新菜单，使“撤销更改”即时可见
         if (mTitle != null) {
             mTitle.addTextChangedListener(new TextWatcher() {
@@ -747,19 +760,19 @@ public class NoteEditor extends AppCompatActivity {
             return;
         }
         new AlertDialog.Builder(this)
-            .setTitle(R.string.menu_save)
-            .setMessage("是否保存更改？")
-            .setPositiveButton(R.string.menu_save, (d, w) -> {
-                updateNote(currentText, currentTitle);
-                finish();
-            })
-            .setNegativeButton(R.string.menu_revert, (d, w) -> {
-                // 先撤销回滚到原始内容与颜色，再退出
-                cancelNote();
-                finish();
-            })
-            .setNeutralButton(android.R.string.cancel, null)
-            .show();
+                .setTitle(R.string.menu_save)
+                .setMessage("是否保存更改？")
+                .setPositiveButton(R.string.menu_save, (d, w) -> {
+                    updateNote(currentText, currentTitle);
+                    finish();
+                })
+                .setNegativeButton(R.string.menu_revert, (d, w) -> {
+                    // 先撤销回滚到原始内容与颜色，再退出
+                    cancelNote();
+                    finish();
+                })
+                .setNeutralButton(android.R.string.cancel, null)
+                .show();
     }
 
     // 颜色按钮点击
@@ -799,7 +812,9 @@ public class NoteEditor extends AppCompatActivity {
             default:
                 resolved = getResources().getColor(R.color.editorPaper);
         }
-        mText.setBackgroundColor(resolved);
+        if (mText != null) {
+            mText.setBackgroundColor(resolved);
+        }
     }
 
     @Override
@@ -811,7 +826,7 @@ public class NoteEditor extends AppCompatActivity {
             String title = mTitle != null ? mTitle.getText().toString() : "";
             String text = mText != null ? mText.getText().toString() : "";
             try (OutputStream os = getContentResolver().openOutputStream(uri);
-                 PrintWriter pw = new PrintWriter(new OutputStreamWriter(os, "UTF-8"))) {
+                 PrintWriter pw = new PrintWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8))) {
                 pw.println(title);
                 pw.println();
                 pw.println(text);

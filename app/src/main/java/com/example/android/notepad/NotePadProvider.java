@@ -492,6 +492,7 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
             try {
                 fout.close();
             } catch (IOException e) {
+                Log.e(TAG, "Error closing stream", e);
             }
         }
     }

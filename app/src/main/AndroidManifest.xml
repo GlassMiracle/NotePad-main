@@ -119,6 +119,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name="com.example.android.notepad.SettingsActivity"
+            android:label="@string/menu_settings"
+            android:exported="true"
+            android:theme="@style/Theme.NotePad"/>
     </application>
 
 </manifest>

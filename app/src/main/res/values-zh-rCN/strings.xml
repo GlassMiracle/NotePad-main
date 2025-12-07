@@ -45,4 +45,17 @@
     <string name="menu_color_change">更改颜色</string>
     <string name="menu_export">导出</string>
 
+    <string name="menu_settings">偏好设置</string>
+    <string name="pref_title_theme">主题模式</string>
+    <string name="pref_title_relative_time">显示相对时间</string>
+    <string name="pref_title_show_preview">显示内容预览</string>
+    <string name="pref_title_default_color">默认笔记颜色</string>
+    <string name="pref_theme_system">跟随系统</string>
+    <string name="pref_theme_light">浅色</string>
+    <string name="pref_theme_dark">深色</string>
+    <string name="pref_color_default">默认</string>
+    <string name="pref_color_yellow">黄色</string>
+    <string name="pref_color_green">绿色</string>
+    <string name="pref_color_blue">蓝色</string>
+    <string name="pref_color_red">红色</string>
 </resources>

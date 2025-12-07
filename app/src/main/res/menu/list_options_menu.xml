@@ -29,4 +29,9 @@
             android:title="@string/menu_theme_dark"
             android:checkable="true" />
     </group>
+    <!-- 设置 -->
+    <item
+        android:id="@+id/menu_settings"
+        android:title="@string/menu_settings"
+        app:showAsAction="never" />
 </menu>

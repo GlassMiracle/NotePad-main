@@ -27,6 +27,8 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -100,6 +102,9 @@ public class NotesList extends AppCompatActivity {
     private static final int SEARCH_MODE_ALL = 0;
     private static final int SEARCH_MODE_TITLE = 1;
     private static final int SEARCH_MODE_CONTENT = 2;
+    private static final long SEARCH_DEBOUNCE_MS = 250L;
+    // 搜索防抖
+    private final Handler searchHandler = new Handler(Looper.getMainLooper());
     // AppCompat 改造新增字段
     private SimpleCursorAdapter mAdapter;
     private ListView listView;
@@ -107,6 +112,7 @@ public class NotesList extends AppCompatActivity {
     private String currentQuery = "";
     private SearchView searchView;
     private Spinner searchModeSpinner;
+    private Runnable searchRunnable;
 
     /**
      * onCreate is called when Android starts this Activity from scratch.
@@ -206,17 +212,27 @@ public class NotesList extends AppCompatActivity {
         );
 
         adapter.setViewBinder((view, cursor1, columnIndex) -> {
+            SharedPreferences sp = getSharedPreferences("settings", MODE_PRIVATE);
+            boolean useRelative = sp.getBoolean("pref_relative_time", true);
+            boolean showPreview = sp.getBoolean("pref_show_preview", true);
             if (columnIndex == COLUMN_INDEX_MODIFICATION_DATE) {
-                // 优化时间显示为相对时间
                 long timestamp = cursor1.getLong(columnIndex);
-                CharSequence rel = DateUtils.getRelativeTimeSpanString(
-                        timestamp,
-                        System.currentTimeMillis(),
-                        DateUtils.MINUTE_IN_MILLIS);
-                ((TextView) view).setText(rel);
+                if (useRelative) {
+                    CharSequence rel = DateUtils.getRelativeTimeSpanString(
+                            timestamp, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS);
+                    ((TextView) view).setText(rel);
+                } else {
+                    java.text.DateFormat df = android.text.format.DateFormat.getDateFormat(this);
+                    java.text.DateFormat tf = android.text.format.DateFormat.getTimeFormat(this);
+                    java.util.Date d = new java.util.Date(timestamp);
+                    ((TextView) view).setText(df.format(d) + " " + tf.format(d));
+                }
                 return true;
             } else if (columnIndex == COLUMN_INDEX_NOTE) {
-                // 内容预览由适配器正常绑定即可，这里不特殊处理
+                if (!showPreview && view instanceof TextView) {
+                    ((TextView) view).setText("");
+                    return true;
+                }
                 return false;
             } else if (columnIndex == COLUMN_INDEX_COLOR) {
                 int colorIdx = cursor1.getInt(columnIndex);
@@ -282,7 +298,16 @@ public class NotesList extends AppCompatActivity {
                     searchMode = SEARCH_MODE_CONTENT;
                     searchView.setQueryHint(getString(R.string.search_hint_content));
                 }
-                mAdapter.getFilter().filter(currentQuery);
+                // 模式切换也走防抖，避免立刻多次查询
+                if (searchRunnable != null) {
+                    searchHandler.removeCallbacks(searchRunnable);
+                }
+                searchRunnable = () -> {
+                    if (mAdapter != null) {
+                        mAdapter.getFilter().filter(currentQuery);
+                    }
+                };
+                searchHandler.postDelayed(searchRunnable, SEARCH_DEBOUNCE_MS);
             }
 
             // 搜索模式下拉框无选择监听
@@ -327,14 +352,23 @@ public class NotesList extends AppCompatActivity {
             @Override
             public boolean onQueryTextSubmit(String query) {
                 currentQuery = query;
-                mAdapter.getFilter().filter(query);
+                mAdapter.getFilter().filter(query); // 提交时立即过滤
                 return true;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
                 currentQuery = newText;
-                mAdapter.getFilter().filter(newText);
+                // 文本变化时防抖过滤
+                if (searchRunnable != null) {
+                    searchHandler.removeCallbacks(searchRunnable);
+                }
+                searchRunnable = () -> {
+                    if (mAdapter != null) {
+                        mAdapter.getFilter().filter(currentQuery);
+                    }
+                };
+                searchHandler.postDelayed(searchRunnable, SEARCH_DEBOUNCE_MS);
                 return true;
             }
         });
@@ -355,6 +389,18 @@ public class NotesList extends AppCompatActivity {
         FloatingActionButton fab = findViewById(R.id.fab_add);
         if (fab != null) {
             fab.setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_INSERT, getIntent().getData())));
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 设置变更后刷新列表所有可见项（相对时间/预览）
+        if (mAdapter != null) {
+            mAdapter.notifyDataSetChanged();
+        }
+        if (listView != null) {
+            listView.invalidateViews();
         }
     }
 
@@ -522,6 +568,9 @@ public class NotesList extends AppCompatActivity {
             item.setChecked(true);
             recreate(); // 重新应用主题
             return true;
+        } else if (item.getItemId() == R.id.menu_settings) {
+            startActivity(new Intent(this, SettingsActivity.class));
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -651,5 +700,14 @@ public class NotesList extends AppCompatActivity {
             return true;
         }
         return super.onContextItemSelected(item);
+    }
+
+    @Override
+    protected void onDestroy() {
+        // 清理防抖回调，避免泄漏
+        if (searchRunnable != null) {
+            searchHandler.removeCallbacks(searchRunnable);
+        }
+        super.onDestroy();
     }
 }
