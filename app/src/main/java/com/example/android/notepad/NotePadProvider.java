@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 /**
@@ -64,7 +65,7 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
      * The database version
      * 数据库版本
      */
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
 
     /**
      * A projection map used to select columns from the database
@@ -164,6 +165,9 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
                 NotePad.Notes.COLUMN_NAME_MODIFICATION_DATE,
                 NotePad.Notes.COLUMN_NAME_MODIFICATION_DATE);
 
+        // Maps "color" to "color"
+        sNotesProjectionMap.put(NotePad.Notes.COLUMN_NAME_COLOR, NotePad.Notes.COLUMN_NAME_COLOR);
+
         /*
          * Creates an initializes a projection map for handling Live Folders
          */
@@ -203,8 +207,11 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
                     + NotePad.Notes.COLUMN_NAME_TITLE + " TEXT,"
                     + NotePad.Notes.COLUMN_NAME_NOTE + " TEXT,"
                     + NotePad.Notes.COLUMN_NAME_CREATE_DATE + " INTEGER,"
-                    + NotePad.Notes.COLUMN_NAME_MODIFICATION_DATE + " INTEGER"
-                    + ");");
+                    + NotePad.Notes.COLUMN_NAME_MODIFICATION_DATE + " INTEGER,"
+                    + NotePad.Notes.COLUMN_NAME_COLOR + " INTEGER DEFAULT 0"
+                     + ");");
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_notes_title ON " + NotePad.Notes.TABLE_NAME + "(" + NotePad.Notes.COLUMN_NAME_TITLE + ");");
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_notes_note ON " + NotePad.Notes.TABLE_NAME + "(" + NotePad.Notes.COLUMN_NAME_NOTE + ");");
         }
 
         /**
@@ -215,16 +222,17 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
          */
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-
             // Logs that the database is being upgraded
             Log.w(TAG, "Upgrading database from version " + oldVersion + " to "
                     + newVersion + ", which will destroy all old data");
-
-            // Kills the table and existing data
-            db.execSQL("DROP TABLE IF EXISTS notes");
-
-            // Recreates the database with a new version
-            onCreate(db);
+            if (oldVersion < 3) {
+                try {
+                    db.execSQL("ALTER TABLE " + NotePad.Notes.TABLE_NAME + " ADD COLUMN " + NotePad.Notes.COLUMN_NAME_COLOR + " INTEGER DEFAULT 0;");
+                } catch (SQLException ignored) {}
+            } else {
+                db.execSQL("DROP TABLE IF EXISTS notes");
+                onCreate(db);
+            }
         }
     }
 
@@ -472,12 +480,10 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
         FileOutputStream fout = new FileOutputStream(output.getFileDescriptor());
         PrintWriter pw = null;
         try {
-            pw = new PrintWriter(new OutputStreamWriter(fout, "UTF-8"));
+            pw = new PrintWriter(new OutputStreamWriter(fout, StandardCharsets.UTF_8));
             pw.println(c.getString(READ_NOTE_TITLE_INDEX));
             pw.println("");
             pw.println(c.getString(READ_NOTE_NOTE_INDEX));
-        } catch (UnsupportedEncodingException e) {
-            Log.w(TAG, "Ooops", e);
         } finally {
             c.close();
             if (pw != null) {
@@ -525,18 +531,18 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
         Long now = Long.valueOf(System.currentTimeMillis());
 
         // If the values map doesn't contain the creation date, sets the value to the current time.
-        if (values.containsKey(NotePad.Notes.COLUMN_NAME_CREATE_DATE) == false) {
+        if (!values.containsKey(NotePad.Notes.COLUMN_NAME_CREATE_DATE)) {
             values.put(NotePad.Notes.COLUMN_NAME_CREATE_DATE, now);
         }
 
         // If the values map doesn't contain the modification date, sets the value to the current
         // time.
-        if (values.containsKey(NotePad.Notes.COLUMN_NAME_MODIFICATION_DATE) == false) {
+        if (!values.containsKey(NotePad.Notes.COLUMN_NAME_MODIFICATION_DATE)) {
             values.put(NotePad.Notes.COLUMN_NAME_MODIFICATION_DATE, now);
         }
 
         // If the values map doesn't contain a title, sets the value to the default title.
-        if (values.containsKey(NotePad.Notes.COLUMN_NAME_TITLE) == false) {
+        if (!values.containsKey(NotePad.Notes.COLUMN_NAME_TITLE)) {
             Resources r = Resources.getSystem();
             values.put(NotePad.Notes.COLUMN_NAME_TITLE, r.getString(android.R.string.untitled));
         }
@@ -745,15 +751,4 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
         return count;
     }
 
-    /**
-     * A test package can call this to get a handle to the database underlying NotePadProvider,
-     * so it can insert test data into the database. The test case class is responsible for
-     * instantiating the provider in a test context; {@link android.test.ProviderTestCase2} does
-     * this during the call to setUp()
-     *
-     * @return a handle to the database helper object for the provider's data.
-     */
-    DatabaseHelper getOpenHelperForTest() {
-        return mOpenHelper;
-    }
 }

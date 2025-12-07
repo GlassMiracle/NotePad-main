@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 应用主主题：Material3 带 ActionBar -->
+    <style name="Theme.NotePad" parent="Theme.Material3.DayNight">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorOnPrimary">@color/colorOnPrimary</item>
+        <item name="colorSecondary">@color/colorSecondary</item>
+        <item name="colorOnSecondary">@color/colorOnSecondary</item>
+        <item name="colorSurface">@color/colorSurface</item>
+        <item name="colorOnSurface">@color/colorOnSurface</item>
+        <item name="android:colorBackground">@color/colorBackground</item>
+        <item name="android:statusBarColor">@color/colorPrimary</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <!-- 弹窗主题用于标题编辑 -->
+    <style name="Theme.NotePad.Dialog" parent="Theme.Material3.DayNight.Dialog">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorOnPrimary">@color/colorOnPrimary</item>
+        <item name="colorSurface">@color/colorSurface</item>
+        <item name="colorOnSurface">@color/colorOnSurface</item>
+        <item name="android:statusBarColor">@color/colorPrimary</item>
+    </style>
+
+    <!-- Toolbar 溢出菜单的主题覆盖，保证深色模式下文字与图标对比度 -->
+    <style name="ThemeOverlay.NotePad.PopupMenu" parent="ThemeOverlay.Material3">
+        <item name="colorSurface">@color/colorSurface</item>
+        <item name="colorOnSurface">@color/colorOnSurface</item>
+        <item name="android:textColor">@color/colorOnSurface</item>
+        <item name="android:textColorPrimary">@color/colorOnSurface</item>
+    </style>
+
+    <!-- Toolbar图标在主色背景上的着色覆盖，保证三点与返回图标可见 -->
+    <style name="ThemeOverlay.NotePad.ToolbarIconsOnPrimary" parent="ThemeOverlay.Material3">
+        <item name="colorControlNormal">@color/colorOnPrimary</item>
+        <item name="actionMenuTextColor">@color/colorOnPrimary</item>
+        <item name="android:textColor">@color/colorOnPrimary</item>
+    </style>
+
+</resources>

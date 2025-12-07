@@ -43,4 +43,24 @@
     <string name="search_hint">Enter keyword search…</string>
     <string name="menu_search">Search</string>
     <string name="no_notes">No notes found</string>
+    <string name="menu_search_all">Search all</string>
+    <string name="menu_search_title">Search by title</string>
+    <string name="menu_search_content">Search by content</string>
+    <string name="search_hint_all">Search title or content…</string>
+    <string name="search_hint_title">Search by title…</string>
+    <string name="search_hint_content">Search by content…</string>
+
+    <!-- 颜色菜单 -->
+    <string name="menu_color_change">Change color</string>
+    <string name="menu_color_default">Default color</string>
+    <string name="menu_color_yellow">Yellow</string>
+    <string name="menu_color_green">Green</string>
+    <string name="menu_color_blue">Blue</string>
+    <string name="menu_color_red">Red</string>
+
+    <!-- 主题设置 -->
+    <string name="menu_theme_follow_system">Theme: Follow system</string>
+    <string name="menu_theme_light">Theme: Light</string>
+    <string name="menu_theme_dark">Theme: Dark</string>
+    <string name="menu_export">Export</string>
 </resources>

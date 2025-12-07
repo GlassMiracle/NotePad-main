@@ -1,28 +1,130 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright (C) 2010 The Android Open Source Project
+<?xml version="1.0" encoding="utf-8"?><!-- Copyright (C) 2010 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
      You may obtain a copy of the License at
-  
+
           http://www.apache.org/licenses/LICENSE-2.0
-  
+
      Unless required by applicable law or agreed to in writing, software
      distributed under the License is distributed on an "AS IS" BASIS,
      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<view xmlns:android="http://schemas.android.com/apk/res/android"
-    class="com.example.android.notepad.NoteEditor$LinedEditText"
-    android:id="@+id/note"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/transparent"
-    android:padding="5dp"
-    android:scrollbars="vertical"
-    android:fadingEdge="vertical"
-    android:gravity="top"
-    android:textSize="22sp"
-    android:capitalize="sentences"
-/>
+    android:orientation="vertical">
+
+    <!-- 顶部导航栏 -->
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/top_app_bar_editor"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/colorPrimary"
+        android:title="@string/resolve_edit"
+        app:titleTextColor="@color/colorOnPrimary"
+        app:navigationIconTint="@color/colorOnPrimary"
+        android:theme="@style/ThemeOverlay.NotePad.ToolbarIconsOnPrimary"
+        app:popupTheme="@style/ThemeOverlay.NotePad.PopupMenu"/>
+    <!-- 标题输入（新建时自动聚焦） -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/text_title"
+        android:paddingLeft="12dp"
+        android:paddingTop="8dp"
+        android:paddingRight="12dp"
+        android:paddingBottom="4dp"
+        app:endIconMode="clear_text">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:inputType="textCapSentences"
+            android:maxLines="1"
+            android:textColor="@color/colorOnSurface"
+            android:textSize="16sp" />
+    </com.google.android.material.textfield.TextInputLayout>
+    <!-- 颜色选择（简洁圆形按钮） -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="4dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_color_yellow"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:onClick="onPickColor"
+            app:backgroundTint="@color/noteColorYellow"
+            app:cornerRadius="18dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_color_green"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="8dp"
+            android:onClick="onPickColor"
+            app:backgroundTint="@color/noteColorGreen"
+            app:cornerRadius="18dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_color_blue"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="8dp"
+            android:onClick="onPickColor"
+            app:backgroundTint="@color/noteColorBlue"
+            app:cornerRadius="18dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_color_red"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="8dp"
+            android:onClick="onPickColor"
+            app:backgroundTint="@color/noteColorRed"
+            app:cornerRadius="18dp" />
+    </LinearLayout>
+    <!-- 原编辑器 -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="12dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:cardUseCompatPadding="true"
+        app:strokeColor="@color/cardStroke"
+        app:strokeWidth="1dp">
+
+        <view
+            android:id="@+id/note"
+            class="com.example.android.notepad.NoteEditor$LinedEditText"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/editorPaper"
+            android:capitalize="sentences"
+            android:fadingEdge="vertical"
+            android:fontFamily="sans-serif"
+            android:gravity="top"
+            android:inputType="textMultiLine|textCapSentences"
+            android:lineSpacingExtra="6dp"
+            android:padding="16dp"
+            android:scrollbars="vertical"
+            android:textColor="@color/colorOnSurface"
+            android:textSize="18sp" />
+    </com.google.android.material.card.MaterialCardView>
+</LinearLayout>

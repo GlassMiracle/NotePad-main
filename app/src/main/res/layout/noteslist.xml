@@ -1,28 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
-    <!-- 添加搜索框 -->
-    <SearchView
-        android:id="@+id/search_view"
+    android:background="#FAFAFA"
+    android:fitsSystemWindows="true">
+    <!-- 现代顶部栏：放入 AppBarLayout，并移除默认左右 inset -->
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:iconifiedByDefault="false"
-        android:queryHint="@string/search_hint" />
+        android:background="@color/colorPrimary"
+        android:elevation="4dp"
+        android:fitsSystemWindows="true">
 
-    <!-- 添加列表视图 -->
-    <ListView
-        android:id="@android:id/list"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
-
-    <!-- 添加空视图 -->
-    <TextView
-        android:id="@android:id/empty"
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/top_app_bar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/colorPrimary"
+            android:theme="@style/ThemeOverlay.NotePad.ToolbarIconsOnPrimary"
+            android:title="@string/title_notes_list"
+            app:contentInsetEnd="0dp"
+            app:contentInsetStart="0dp"
+            app:contentInsetStartWithNavigation="0dp"
+            app:navigationIconTint="@color/colorOnPrimary"
+            app:popupTheme="@style/ThemeOverlay.NotePad.PopupMenu"
+            app:titleCentered="true"
+            app:titleTextColor="@color/colorOnPrimary" />
+    </com.google.android.material.appbar.AppBarLayout>
+    <!-- 内容区：单独加内边距，避免影响顶部栏 -->
+    <LinearLayout
+        android:id="@+id/content_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:text="@string/no_notes"/>
+        android:background="@color/listBackground"
+        android:orientation="vertical"
+        android:padding="12dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        <!-- 搜索行卡片化（更现代） -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:strokeColor="@color/cardStroke"
+            app:strokeWidth="1dp">
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="8dp">
 
-</LinearLayout>
+                <SearchView
+                    android:id="@+id/search_view"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:iconifiedByDefault="false"
+                    android:queryHint="@string/search_hint_all" />
+
+                <Spinner
+                    android:id="@+id/search_mode_spinner"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:layout_gravity="end" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+        <!-- 添加列表视图 -->
+        <ListView
+            android:id="@android:id/list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:divider="@android:color/darker_gray"
+            android:dividerHeight="0.5dp"
+            android:listSelector="?android:attr/listChoiceBackgroundIndicator" />
+        <!-- 添加空视图 -->
+        <TextView
+            android:id="@android:id/empty"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="@string/no_notes"
+            android:textColor="#808080"
+            android:textSize="16sp" />
+    </LinearLayout>
+    <!-- 悬浮新建按钮 -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_add"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        app:backgroundTint="@color/colorPrimary"
+        app:srcCompat="@drawable/ic_menu_compose"
+        app:tint="@color/colorOnPrimary" />
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

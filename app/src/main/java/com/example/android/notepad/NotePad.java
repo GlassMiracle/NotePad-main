@@ -152,5 +152,12 @@ public final class NotePad {
          * 最后修改时间戳的列名
          */
         public static final String COLUMN_NAME_MODIFICATION_DATE = "modified";
+
+        /**
+         * Column name for note color (palette index)
+         * <P>Type: INTEGER</P>
+         */
+        public static final String COLUMN_NAME_COLOR = "color";
+
     }
 }

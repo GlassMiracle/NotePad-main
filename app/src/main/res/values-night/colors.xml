@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#D0BCFF</color>
+    <color name="colorOnPrimary">#381E72</color>
+    <color name="colorSecondary">#CCC2DC</color>
+    <color name="colorOnSecondary">#332D41</color>
+    <color name="colorSurface">#1C1B1F</color>
+    <color name="colorOnSurface">#E6E1E5</color>
+    <color name="colorBackground">#121212</color>
+    <color name="colorOnBackground">#E6E1E5</color>
+    <color name="colorError">#CF6679</color>
+
+    <!-- 扩展配色（夜间） -->
+    <color name="colorSurfaceVariant">#2C2930</color>
+    <color name="colorOutline">#938F99</color>
+    <color name="editorPaper">#1E1E1E</color>
+    <color name="listBackground">#141414</color>
+    <color name="cardStroke">#2A2A2A</color>
+
+    <!-- 笔记颜色调色板（夜间适配） -->
+    <color name="noteColorYellow">#5E5A00</color>
+    <color name="noteColorGreen">#1E4D2B</color>
+    <color name="noteColorBlue">#153E66</color>
+    <color name="noteColorRed">#5A1F1F</color>
+</resources>

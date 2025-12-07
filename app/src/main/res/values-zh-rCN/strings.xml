@@ -24,4 +24,25 @@
     <string name="search_hint">输入关键词搜索…</string>
     <string name="menu_search">搜索</string>
     <string name="no_notes">没有找到笔记</string>
+    <string name="menu_search_all">搜索全部</string>
+    <string name="menu_search_title">按标题搜索</string>
+    <string name="menu_search_content">按内容搜索</string>
+    <string name="search_hint_all">搜索标题或内容…</string>
+    <string name="search_hint_title">按标题搜索…</string>
+    <string name="search_hint_content">按内容搜索…</string>
+
+    <!-- 主题设置（中文） -->
+    <string name="menu_theme_follow_system">主题：跟随系统</string>
+    <string name="menu_theme_light">主题：浅色</string>
+    <string name="menu_theme_dark">主题：深色</string>
+
+    <!-- 颜色菜单（中文） -->
+    <string name="menu_color_default">默认颜色</string>
+    <string name="menu_color_yellow">黄色</string>
+    <string name="menu_color_green">绿色</string>
+    <string name="menu_color_blue">蓝色</string>
+    <string name="menu_color_red">红色</string>
+    <string name="menu_color_change">更改颜色</string>
+    <string name="menu_export">导出</string>
+
 </resources>
