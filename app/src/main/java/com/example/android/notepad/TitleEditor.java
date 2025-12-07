@@ -27,7 +27,7 @@ import android.widget.EditText;
 /**
  * This Activity allows the user to edit a note's title. It displays a floating window
  * containing an EditText.
- *
+ * <p>
  * NOTE: Notice that the provider operations in this Activity are taking place on the UI thread.
  * This is not a good practice. It is only done here to make the code more readable. A real
  * application should use the {@link android.content.AsyncQueryHandler}
@@ -82,7 +82,7 @@ public class TitleEditor extends Activity {
          * android.content.AsyncQueryHandler or android.os.AsyncTask.
          */
 
-        mCursor = managedQuery(
+        mCursor = getContentResolver().query(
             mUri,        // The URI for the note that is to be retrieved.
             PROJECTION,  // The columns to retrieve
             null,        // No selection criteria are used, so no where columns are needed.
@@ -91,13 +91,13 @@ public class TitleEditor extends Activity {
         );
 
         // Gets the View ID for the EditText box
-        mText = (EditText) this.findViewById(R.id.title);
+        mText = this.findViewById(R.id.title);
     }
 
     /**
      * This method is called when the Activity is about to come to the foreground. This happens
      * when the Activity comes to the top of the task stack, OR when it is first starting.
-     *
+     * <p>
      * Displays the current title for the selected note.
      */
     @Override
@@ -119,13 +119,13 @@ public class TitleEditor extends Activity {
 
     /**
      * This method is called when the Activity loses focus.
-     *
+     * <p>
      * For Activity objects that edit information, onPause() may be the one place where changes are
      * saved. The Android application model is predicated on the idea that "save" and "exit" aren't
      * required actions. When users navigate away from an Activity, they shouldn't have to go back
      * to it to complete their work. The act of going away should save everything and leave the
      * Activity in a state where Android can destroy it if necessary.
-     *
+     * <p>
      * Updates the note with the text currently in the text box.
      */
     @Override

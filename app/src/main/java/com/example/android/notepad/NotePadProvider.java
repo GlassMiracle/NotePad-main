@@ -42,7 +42,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
@@ -66,19 +65,6 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
      * 数据库版本
      */
     private static final int DATABASE_VERSION = 3;
-
-    /**
-     * A projection map used to select columns from the database
-     * 用于从数据库中选择列的投影映射
-     */
-    private static HashMap<String, String> sNotesProjectionMap;
-
-    /**
-     * A projection map used to select columns from the database
-     * 用于从数据库中选择列的投影映射
-     */
-    private static HashMap<String, String> sLiveFolderProjectionMap;
-
     /**
      * Standard projection for the interesting columns of a normal note.
      * 用于选择数据库中笔记的普通列的投影
@@ -90,7 +76,6 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
     };
     private static final int READ_NOTE_NOTE_INDEX = 1;
     private static final int READ_NOTE_TITLE_INDEX = 2;
-
     /*
      * Constants used by the Uri matcher to choose an action based on the pattern
      * of the incoming URI
@@ -98,22 +83,31 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
      */
     // The incoming URI matches the Notes URI pattern
     private static final int NOTES = 1;
-
     // The incoming URI matches the Note ID URI pattern
     private static final int NOTE_ID = 2;
-
     // The incoming URI matches the Live Folder URI pattern
     private static final int LIVE_FOLDER_NOTES = 3;
-
     /**
      * A UriMatcher instance
      * 用于匹配传入URI的模式
      */
     private static final UriMatcher sUriMatcher;
-
-    // Handle to a new DatabaseHelper.
-    private DatabaseHelper mOpenHelper;
-
+    /**
+     * A projection map used to select columns from the database
+     * 用于从数据库中选择列的投影映射
+     */
+    private static final HashMap<String, String> sNotesProjectionMap = new HashMap<>();
+    /**
+     * A projection map used to select columns from the database
+     * 用于从数据库中选择列的投影映射
+     */
+    private static final HashMap<String, String> sLiveFolderProjectionMap = new HashMap<>();
+    /**
+     * This describes the MIME types that are supported for opening a note
+     * URI as a stream.
+     */
+    static ClipDescription NOTE_STREAM_TYPES = new ClipDescription(null,
+            new String[]{ClipDescription.MIMETYPE_TEXT_PLAIN});
 
     /**
      * A block that instantiates and sets static objects
@@ -143,10 +137,6 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
          * Creates and initializes a projection map that returns all columns
          */
 
-        // Creates a new projection map instance. The map returns a column name
-        // given a string. The two are usually equal.
-        sNotesProjectionMap = new HashMap<String, String>();
-
         // Maps the string "_ID" to the column name "_ID"
         sNotesProjectionMap.put(NotePad.Notes._ID, NotePad.Notes._ID);
 
@@ -172,9 +162,6 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
          * Creates an initializes a projection map for handling Live Folders
          */
 
-        // Creates a new projection map instance
-        sLiveFolderProjectionMap = new HashMap<String, String>();
-
         // Maps "_ID" to "_ID AS _ID" for a live folder
         sLiveFolderProjectionMap.put(LiveFolders._ID, NotePad.Notes._ID + " AS " + LiveFolders._ID);
 
@@ -183,58 +170,8 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
                 LiveFolders.NAME);
     }
 
-    /**
-     * This class helps open, create, and upgrade the database file. Set to package visibility
-     * for testing purposes.
-     * 帮助打开、创建和更新数据库文件的类。设置为包可见性，用于测试。
-     */
-    static class DatabaseHelper extends SQLiteOpenHelper {
-
-        DatabaseHelper(Context context) {
-
-            // calls the super constructor, requesting the default cursor factory.
-            super(context, DATABASE_NAME, null, DATABASE_VERSION);
-        }
-
-        /**
-         * Creates the underlying database with table name and column names taken from the
-         * NotePad class.
-         */
-        @Override
-        public void onCreate(SQLiteDatabase db) {
-            db.execSQL("CREATE TABLE " + NotePad.Notes.TABLE_NAME + " ("
-                    + NotePad.Notes._ID + " INTEGER PRIMARY KEY,"
-                    + NotePad.Notes.COLUMN_NAME_TITLE + " TEXT,"
-                    + NotePad.Notes.COLUMN_NAME_NOTE + " TEXT,"
-                    + NotePad.Notes.COLUMN_NAME_CREATE_DATE + " INTEGER,"
-                    + NotePad.Notes.COLUMN_NAME_MODIFICATION_DATE + " INTEGER,"
-                    + NotePad.Notes.COLUMN_NAME_COLOR + " INTEGER DEFAULT 0"
-                     + ");");
-            db.execSQL("CREATE INDEX IF NOT EXISTS idx_notes_title ON " + NotePad.Notes.TABLE_NAME + "(" + NotePad.Notes.COLUMN_NAME_TITLE + ");");
-            db.execSQL("CREATE INDEX IF NOT EXISTS idx_notes_note ON " + NotePad.Notes.TABLE_NAME + "(" + NotePad.Notes.COLUMN_NAME_NOTE + ");");
-        }
-
-        /**
-         * Demonstrates that the provider must consider what happens when the
-         * underlying datastore is changed. In this sample, the database is upgraded the database
-         * by destroying the existing data.
-         * A real application should upgrade the database in place.
-         */
-        @Override
-        public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            // Logs that the database is being upgraded
-            Log.w(TAG, "Upgrading database from version " + oldVersion + " to "
-                    + newVersion + ", which will destroy all old data");
-            if (oldVersion < 3) {
-                try {
-                    db.execSQL("ALTER TABLE " + NotePad.Notes.TABLE_NAME + " ADD COLUMN " + NotePad.Notes.COLUMN_NAME_COLOR + " INTEGER DEFAULT 0;");
-                } catch (SQLException ignored) {}
-            } else {
-                db.execSQL("DROP TABLE IF EXISTS notes");
-                onCreate(db);
-            }
-        }
-    }
+    // Handle to a new DatabaseHelper.
+    private DatabaseHelper mOpenHelper;
 
     /**
      * Initializes the provider by creating a new DatabaseHelper. onCreate() is called
@@ -366,12 +303,6 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
     }
 
 //BEGIN_INCLUDE(stream)
-    /**
-     * This describes the MIME types that are supported for opening a note
-     * URI as a stream.
-     */
-    static ClipDescription NOTE_STREAM_TYPES = new ClipDescription(null,
-            new String[]{ClipDescription.MIMETYPE_TEXT_PLAIN});
 
     /**
      * Returns the types of available data streams.  URIs to specific notes are supported.
@@ -406,7 +337,6 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
                 throw new IllegalArgumentException("Unknown URI " + uri);
         }
     }
-
 
     /**
      * Returns a stream of data for each supported stream type. This method does a query on the
@@ -496,7 +426,6 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
             }
         }
     }
-//END_INCLUDE(stream)
 
     /**
      * This is called when a client calls
@@ -529,7 +458,7 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
         }
 
         // Gets the current system time in milliseconds
-        Long now = Long.valueOf(System.currentTimeMillis());
+        Long now = System.currentTimeMillis();
 
         // If the values map doesn't contain the creation date, sets the value to the current time.
         if (!values.containsKey(NotePad.Notes.COLUMN_NAME_CREATE_DATE)) {
@@ -578,6 +507,7 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
         // If the insert didn't succeed, then the rowID is <= 0. Throws an exception.
         throw new SQLException("Failed to insert row into " + uri);
     }
+//END_INCLUDE(stream)
 
     /**
      * This is called when a client calls
@@ -750,6 +680,59 @@ public class NotePadProvider extends ContentProvider implements PipeDataWriter<C
 
         // Returns the number of rows updated.
         return count;
+    }
+
+    /**
+     * This class helps open, create, and upgrade the database file. Set to package visibility
+     * for testing purposes.
+     * 帮助打开、创建和更新数据库文件的类。设置为包可见性，用于测试。
+     */
+    static class DatabaseHelper extends SQLiteOpenHelper {
+
+        DatabaseHelper(Context context) {
+            // calls the super constructor, requesting the default cursor factory.
+            super(context, DATABASE_NAME, null, DATABASE_VERSION);
+        }
+
+        /**
+         * Creates the underlying database with table name and column names taken from the
+         * NotePad class.
+         */
+        @Override
+        public void onCreate(SQLiteDatabase db) {
+            db.execSQL("CREATE TABLE " + NotePad.Notes.TABLE_NAME + " ("
+                    + NotePad.Notes._ID + " INTEGER PRIMARY KEY,"
+                    + NotePad.Notes.COLUMN_NAME_TITLE + " TEXT,"
+                    + NotePad.Notes.COLUMN_NAME_NOTE + " TEXT,"
+                    + NotePad.Notes.COLUMN_NAME_CREATE_DATE + " INTEGER,"
+                    + NotePad.Notes.COLUMN_NAME_MODIFICATION_DATE + " INTEGER,"
+                    + NotePad.Notes.COLUMN_NAME_COLOR + " INTEGER DEFAULT 0"
+                    + ");");
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_notes_title ON " + NotePad.Notes.TABLE_NAME + "(" + NotePad.Notes.COLUMN_NAME_TITLE + ");");
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_notes_note ON " + NotePad.Notes.TABLE_NAME + "(" + NotePad.Notes.COLUMN_NAME_NOTE + ");");
+        }
+
+        /**
+         * Demonstrates that the provider must consider what happens when the
+         * underlying datastore is changed. In this sample, the database is upgraded the database
+         * by destroying the existing data.
+         * A real application should upgrade the database in place.
+         */
+        @Override
+        public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+            // Logs that the database is being upgraded
+            Log.w(TAG, "Upgrading database from version " + oldVersion + " to "
+                    + newVersion + ", which will destroy all old data");
+            if (oldVersion < 3) {
+                try {
+                    db.execSQL("ALTER TABLE " + NotePad.Notes.TABLE_NAME + " ADD COLUMN " + NotePad.Notes.COLUMN_NAME_COLOR + " INTEGER DEFAULT 0;");
+                } catch (SQLException ignored) {
+                }
+            } else {
+                db.execSQL("DROP TABLE IF EXISTS notes");
+                onCreate(db);
+            }
+        }
     }
 
 }

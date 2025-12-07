@@ -41,8 +41,11 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.AppCompatEditText;
 
 import com.google.android.material.appbar.MaterialToolbar;
 
@@ -85,7 +88,6 @@ public class NoteEditor extends AppCompatActivity {
     // as a "state" constant
     private static final int STATE_EDIT = 0;
     private static final int STATE_INSERT = 1;
-    private static final int REQUEST_EXPORT = 1001;
     // Global mutable variables
     private int mState;
     private Uri mUri;
@@ -98,6 +100,7 @@ public class NoteEditor extends AppCompatActivity {
     private EditText mTitle;
     private String mOriginalTitle = "";
     private boolean mIsFromPaste = false;
+    private ActivityResultLauncher<Intent> exportFileLauncher;
 
     /**
      * This method is called by Android when the Activity is first started. From the incoming
@@ -159,7 +162,7 @@ public class NoteEditor extends AppCompatActivity {
 
         // 初始化查询光标，避免菜单刷新早于光标创建导致空指针
         if (mUri != null) {
-            mCursor = managedQuery(
+            mCursor = getContentResolver().query(
                     mUri,
                     PROJECTION,
                     null,
@@ -176,7 +179,7 @@ public class NoteEditor extends AppCompatActivity {
          * the block will be momentary, but in a real app you should use
          * android.content.AsyncQueryHandler or android.os.AsyncTask.
          */
-        mCursor = managedQuery(
+        mCursor = getContentResolver().query(
                 mUri,         // The URI that gets multiple notes from the provider.
                 PROJECTION,   // A projection that returns the note ID and note content for each note.
                 null,         // No "where" clause selection criteria.
@@ -240,6 +243,28 @@ public class NoteEditor extends AppCompatActivity {
         if (savedInstanceState != null) {
             mOriginalContent = savedInstanceState.getString(ORIGINAL_CONTENT);
         }
+
+        // 初始化导出文件的 ActivityResultLauncher
+        exportFileLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Uri uri = result.getData().getData();
+                        if (uri == null) return;
+                        String title = mTitle != null ? mTitle.getText().toString() : "";
+                        String text = mText != null ? mText.getText().toString() : "";
+                        try (OutputStream os = getContentResolver().openOutputStream(uri);
+                             PrintWriter pw = new PrintWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8))) {
+                            pw.println(title);
+                            pw.println();
+                            pw.println(text);
+                            pw.flush();
+                            Toast.makeText(NoteEditor.this, "导出成功", Toast.LENGTH_SHORT).show();
+                        } catch (IOException e) {
+                            Toast.makeText(NoteEditor.this, "导出失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
+                        }
+                    }
+                });
     }
 
     /**
@@ -260,58 +285,66 @@ public class NoteEditor extends AppCompatActivity {
          */
         if (mCursor != null) {
             // Requery in case something changed while paused (such as the title)
-            mCursor.requery();
+            mCursor = getContentResolver().query(
+                    mUri,
+                    PROJECTION,
+                    null,
+                    null,
+                    null
+            );
 
             /* Moves to the first record. Always call moveToFirst() before accessing data in
              * a Cursor for the first time. The semantics of using a Cursor are that when it is
              * created, its internal index is pointing to a "place" immediately before the first
              * record.
              */
-            mCursor.moveToFirst();
+            if (mCursor != null) {
+                mCursor.moveToFirst();
 
-            // Modifies the window title for the Activity according to the current Activity state.
-            if (mState == STATE_EDIT) {
-                // Set the title of the Activity to include the note title
+                // Modifies the window title for the Activity according to the current Activity state.
+                if (mState == STATE_EDIT) {
+                    // Set the title of the Activity to include the note title
+                    int colTitleIndex = mCursor.getColumnIndex(NotePad.Notes.COLUMN_NAME_TITLE);
+                    String title = mCursor.getString(colTitleIndex);
+                    Resources res = getResources();
+                    String text = String.format(res.getString(R.string.title_edit), title);
+                    setTitle(text);
+                    // Sets the title to "create" for inserts
+                } else if (mState == STATE_INSERT) {
+                    setTitle(getText(R.string.title_create));
+                }
+
+                /*
+                 * onResume() may have been called after the Activity lost focus (was paused).
+                 * The user was either editing or creating a note when the Activity paused.
+                 * The Activity should re-display the text that had been retrieved previously, but
+                 * it should not move the cursor. This helps the user to continue editing or entering.
+                 */
+
+                // Gets the note text from the Cursor and puts it in the TextView, but doesn't change
+                // the text cursor's position.
+                int colNoteIndex = mCursor.getColumnIndex(NotePad.Notes.COLUMN_NAME_NOTE);
+                String note = mCursor.getString(colNoteIndex);
+                mText.setTextKeepState(note);
                 int colTitleIndex = mCursor.getColumnIndex(NotePad.Notes.COLUMN_NAME_TITLE);
-                String title = mCursor.getString(colTitleIndex);
-                Resources res = getResources();
-                String text = String.format(res.getString(R.string.title_edit), title);
-                setTitle(text);
-                // Sets the title to "create" for inserts
-            } else if (mState == STATE_INSERT) {
-                setTitle(getText(R.string.title_create));
-            }
+                String titleVal = colTitleIndex != -1 ? mCursor.getString(colTitleIndex) : "";
+                if (mTitle != null) {
+                    mTitle.setText(titleVal != null ? titleVal : "");
+                }
+                int colColorIndex = mCursor.getColumnIndex(NotePad.Notes.COLUMN_NAME_COLOR);
+                if (colColorIndex != -1) {
+                    mColor = mCursor.getInt(colColorIndex);
+                    mOriginalColor = mColor;
+                    applyEditorColor();
+                }
 
-            /*
-             * onResume() may have been called after the Activity lost focus (was paused).
-             * The user was either editing or creating a note when the Activity paused.
-             * The Activity should re-display the text that had been retrieved previously, but
-             * it should not move the cursor. This helps the user to continue editing or entering.
-             */
-
-            // Gets the note text from the Cursor and puts it in the TextView, but doesn't change
-            // the text cursor's position.
-            int colNoteIndex = mCursor.getColumnIndex(NotePad.Notes.COLUMN_NAME_NOTE);
-            String note = mCursor.getString(colNoteIndex);
-            mText.setTextKeepState(note);
-            int colTitleIndex = mCursor.getColumnIndex(NotePad.Notes.COLUMN_NAME_TITLE);
-            String titleVal = colTitleIndex != -1 ? mCursor.getString(colTitleIndex) : "";
-            if (mTitle != null) {
-                mTitle.setText(titleVal != null ? titleVal : "");
-            }
-            int colColorIndex = mCursor.getColumnIndex(NotePad.Notes.COLUMN_NAME_COLOR);
-            if (colColorIndex != -1) {
-                mColor = mCursor.getInt(colColorIndex);
-                mOriginalColor = mColor;
-                applyEditorColor();
-            }
-
-            // Stores the original note text, to allow the user to revert changes.
-            if (mOriginalContent == null) {
-                mOriginalContent = note;
-            }
-            if (mOriginalTitle == null || mOriginalTitle.isEmpty()) {
-                mOriginalTitle = titleVal != null ? titleVal : "";
+                // Stores the original note text, to allow the user to revert changes.
+                if (mOriginalContent == null) {
+                    mOriginalContent = note;
+                }
+                if (mOriginalTitle == null || mOriginalTitle.isEmpty()) {
+                    mOriginalTitle = titleVal != null ? titleVal : "";
+                }
             }
 
             /*
@@ -337,6 +370,7 @@ public class NoteEditor extends AppCompatActivity {
         // Save away the original text, so we still have it if the activity
         // needs to be killed while paused.
         outState.putString(ORIGINAL_CONTENT, mOriginalContent);
+        super.onSaveInstanceState(outState);
     }
 
     /**
@@ -491,7 +525,7 @@ public class NoteEditor extends AppCompatActivity {
             create.addCategory(Intent.CATEGORY_OPENABLE);
             create.setType("text/plain");
             create.putExtra(Intent.EXTRA_TITLE, base + ".txt");
-            startActivityForResult(create, REQUEST_EXPORT);
+            exportFileLauncher.launch(create);
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -558,7 +592,7 @@ public class NoteEditor extends AppCompatActivity {
 
             // 确保光标存在，便于后续菜单刷新与撤销逻辑
             if (mUri != null && (mCursor == null || mCursor.isClosed())) {
-                mCursor = managedQuery(mUri, PROJECTION, null, null, null);
+                mCursor = getContentResolver().query(mUri, PROJECTION, null, null, null);
             }
             supportInvalidateOptionsMenu();
         }
@@ -817,31 +851,10 @@ public class NoteEditor extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_EXPORT && resultCode == RESULT_OK && data != null) {
-            Uri uri = data.getData();
-            if (uri == null) return;
-            String title = mTitle != null ? mTitle.getText().toString() : "";
-            String text = mText != null ? mText.getText().toString() : "";
-            try (OutputStream os = getContentResolver().openOutputStream(uri);
-                 PrintWriter pw = new PrintWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8))) {
-                pw.println(title);
-                pw.println();
-                pw.println(text);
-                pw.flush();
-                Toast.makeText(this, "导出成功", Toast.LENGTH_SHORT).show();
-            } catch (IOException e) {
-                Toast.makeText(this, "导出失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
-            }
-        }
-    }
-
     /**
      * Defines a custom EditText View that draws lines between each line of text that is displayed.
      */
-    public static class LinedEditText extends EditText {
+    public static class LinedEditText extends AppCompatEditText {
         private final Rect mRect; // 绘制线
         private final Paint mPaint; // 绘制线的画笔
 
